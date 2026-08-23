@@ -5,7 +5,10 @@ from src.cep import buscar_cep
 from src.geocoding import obter_coordenadas
 from src.weather import buscar_previsao
 
-#CONFIGURAÇÃO DA PÁGINA
+
+
+# CONFIGURAÇÃO DA PÁGINA
+
 
 st.set_page_config(
     page_title="Weather Explorer",
@@ -14,15 +17,11 @@ st.set_page_config(
 )
 
 
-#ESTADO DA APLICAÇÃO
 
-if "cep_consultado" not in st.session_state:
-    st.session_state.cep_consultado = ""
+# FUNÇÕES AUXILIARES
 
-#FUNÇÃO: DESCRIÇÃO DO TEMPO
 
 def descricao_tempo(codigo):
-
     descricoes = {
         0: "Céu limpo",
         1: "Principalmente limpo",
@@ -52,10 +51,8 @@ def descricao_tempo(codigo):
         "Condição desconhecida"
     )
 
-#FUNÇÃO: ÍCONE DO TEMPO
 
 def icone_tempo(codigo):
-
     if codigo == 0:
         return "☀️"
 
@@ -79,7 +76,18 @@ def icone_tempo(codigo):
 
     return "🌡️"
 
-#CABEÇALHO
+
+
+# ESTADO DA APLICAÇÃO
+
+
+if "cep_consultado" not in st.session_state:
+    st.session_state.cep_consultado = ""
+
+
+
+# CABEÇALHO
+
 
 st.title("🌦️ Weather Explorer")
 
@@ -90,7 +98,10 @@ st.write(
 
 st.divider()
 
-#CAMPO DE CEP
+
+
+# CAMPO DE CEP
+
 
 col_input, col_button = st.columns([5, 1])
 
@@ -98,8 +109,8 @@ with col_input:
 
     cep = st.text_input(
         "Digite seu CEP",
-        value=st.session_state.cep_consultado,
-        placeholder="Ex.: 50000-000"
+        placeholder="Ex.: 50000-000",
+        value=st.session_state.cep_consultado
     )
 
 
@@ -118,24 +129,29 @@ with col_button:
         use_container_width=True
     )
 
-#DEFINE A AÇÃO
-
-if consultar:
-
-    st.session_state.cep_consultado = cep.strip()
 
 
-if atualizar:
+# CONSULTA
 
-    cep = st.session_state.cep_consultado
-
-#CONSULTA
 
 if consultar or atualizar:
 
+    
+    # SALVA O CEP CONSULTADO
+    
 
-    #VALIDAÇÃO DO CEP
+    if consultar:
 
+        st.session_state.cep_consultado = cep
+
+    else:
+
+        cep = st.session_state.cep_consultado
+
+
+    
+    # VALIDAÇÃO DO CEP
+    
 
     if not cep.strip():
 
@@ -145,7 +161,10 @@ if consultar or atualizar:
 
         st.stop()
 
-#BUSCA DO CEP
+
+    
+    # BUSCA DO CEP
+    
 
     with st.spinner("Consultando CEP..."):
 
@@ -167,7 +186,10 @@ if consultar or atualizar:
 
         st.stop()
 
-#DADOS DO ENDEREÇO
+
+    
+    # DADOS DO ENDEREÇO
+    
 
     cidade = dados.get(
         "localidade",
@@ -194,7 +216,10 @@ if consultar or atualizar:
         cep
     )
 
-#ENDEREÇO PARA GEOCODIFICAÇÃO
+
+    
+    # MONTA ENDEREÇO
+    
 
     endereco = (
         f"{logradouro}, "
@@ -203,7 +228,10 @@ if consultar or atualizar:
         f"{estado}, Brasil"
     )
 
-#GEOCODIFICAÇÃO
+
+    
+    # GEOCODIFICAÇÃO
+    
 
     with st.spinner("Localizando endereço..."):
 
@@ -235,8 +263,9 @@ if consultar or atualizar:
     longitude = coordenadas["longitude"]
 
 
-#PREVISÃO DO TEMPO
-
+    
+    # PREVISÃO DO TEMPO
+    
 
     with st.spinner(
         "Consultando previsão do tempo..."
@@ -264,9 +293,9 @@ if consultar or atualizar:
         st.stop()
 
 
-  
-#DADOS ATUAIS
-  
+    
+    # DADOS ATUAIS
+    
 
     atual = previsao.get(
         "current",
@@ -294,9 +323,9 @@ if consultar or atualizar:
     )
 
 
-  
-#LOCALIZAÇÃO
-  
+    
+    # LOCALIZAÇÃO
+    
 
     st.divider()
 
@@ -304,32 +333,17 @@ if consultar or atualizar:
         f"📍 {cidade}, {estado}"
     )
 
-    endereco_exibicao = ", ".join(
-        parte
-        for parte in [logradouro, bairro]
-        if parte
+    st.caption(
+        f"CEP {cep_formatado} • "
+        f"{logradouro}, {bairro}"
     )
 
-    if endereco_exibicao:
 
-        st.caption(
-            f"CEP {cep_formatado} • "
-            f"{endereco_exibicao}"
-        )
-
-    else:
-
-        st.caption(
-            f"CEP {cep_formatado}"
-        )
-
-
-  
-#CLIMA ATUAL
-  
+    
+    # CLIMA ATUAL
+    
 
     col_weather, col_description = st.columns([1, 2])
-
 
     with col_weather:
 
@@ -354,12 +368,11 @@ if consultar or atualizar:
         )
 
 
-  
-#MÉTRICAS
-  
+    
+    # MÉTRICAS
+    
 
     col1, col2, col3 = st.columns(3)
-
 
     with col1:
 
@@ -385,37 +398,38 @@ if consultar or atualizar:
         )
 
 
-  
-#PREVISÃO POR HORA
-  
+    
+    # PREVISÃO POR HORA
+    
 
     st.divider()
 
     st.subheader(
-        "📈 Próximas 24 horas"
+        "🕐 Próximas 24 horas"
     )
-
 
     hourly = previsao.get(
         "hourly",
         {}
     )
 
-
     horarios = hourly.get(
         "time",
         []
     )[:24]
-
 
     temperaturas = hourly.get(
         "temperature_2m",
         []
     )[:24]
 
-
     chuvas = hourly.get(
         "precipitation_probability",
+        []
+    )[:24]
+
+    codigos_horarios = hourly.get(
+        "weather_code",
         []
     )[:24]
 
@@ -423,25 +437,87 @@ if consultar or atualizar:
     quantidade_horas = min(
         len(horarios),
         len(temperaturas),
-        len(chuvas)
+        len(chuvas),
+        len(codigos_horarios)
     )
 
 
     if quantidade_horas > 0:
 
+
+        # CARDS
+
+
+        st.markdown(
+            "#### Previsão por horário"
+        )
+
+        quantidade_cards = min(
+            8,
+            quantidade_horas
+        )
+
+        colunas = st.columns(
+            quantidade_cards
+        )
+
+
+        for i in range(
+            quantidade_cards
+        ):
+
+            with colunas[i]:
+
+                horario = pd.to_datetime(
+                    horarios[i]
+                ).strftime("%H:%M")
+
+                temperatura_hora = temperaturas[i]
+
+                chuva_hora = chuvas[i]
+
+                codigo_hora = codigos_horarios[i]
+
+
+                st.markdown(
+                    f"**{horario}**"
+                )
+
+                st.markdown(
+                    f"### "
+                    f"{icone_tempo(codigo_hora)}"
+                )
+
+                st.markdown(
+                    f"**{temperatura_hora:.0f}°C**"
+                )
+
+                st.caption(
+                    descricao_tempo(
+                        codigo_hora
+                    )
+                )
+
+                st.caption(
+                    f"🌧️ {chuva_hora}%"
+                )
+
+
+
+        # GRÁFICO
+
+
+        st.markdown(
+            "#### Variação da temperatura"
+        )
+
         grafico = pd.DataFrame(
             {
                 "Horário": pd.to_datetime(
-                    horarios[:quantidade_horas]
+                    horarios
                 ),
 
-                "Temperatura (°C)": (
-                    temperaturas[:quantidade_horas]
-                ),
-
-                "Chuva (%)": (
-                    chuvas[:quantidade_horas]
-                )
+                "Temperatura (°C)": temperaturas
             }
         )
 
@@ -453,11 +529,9 @@ if consultar or atualizar:
 
         st.line_chart(
             grafico,
-            y=[
-                "Temperatura (°C)",
-                "Chuva (%)"
-            ]
+            y="Temperatura (°C)"
         )
+
 
     else:
 
@@ -467,9 +541,9 @@ if consultar or atualizar:
         )
 
 
-  
-#PREVISÃO PARA 7 DIAS
-
+    
+    # PREVISÃO PARA 7 DIAS
+    
 
     st.divider()
 
@@ -477,12 +551,10 @@ if consultar or atualizar:
         "📅 Previsão para 7 dias"
     )
 
-
     daily = previsao.get(
         "daily",
         {}
     )
-
 
     datas = daily.get(
         "time",
@@ -571,6 +643,7 @@ if consultar or atualizar:
                     f"{chuvas_diarias[i]}%"
                 )
 
+
     else:
 
         st.info(
@@ -579,9 +652,9 @@ if consultar or atualizar:
         )
 
 
-
-#MAPA
-  
+    
+    # MAPA
+    
 
     st.divider()
 
@@ -606,7 +679,9 @@ if consultar or atualizar:
     )
 
 
-#COORDENADAS
+    
+    # COORDENADAS
+    
 
     st.caption(
         f"Coordenadas: "

@@ -4,10 +4,7 @@ import streamlit as st
 from src.cep import buscar_cep
 from src.geocoding import obter_coordenadas
 from src.weather import buscar_previsao
-
-
-
-# CONFIGURAÇÃO DA PÁGINA
+from src.weather_utils import descricao_tempo, icone_tempo
 
 
 st.set_page_config(
@@ -17,106 +14,126 @@ st.set_page_config(
 )
 
 
-
-# FUNÇÕES AUXILIARES
-
-
-def descricao_tempo(codigo):
-    descricoes = {
-        0: "Céu limpo",
-        1: "Principalmente limpo",
-        2: "Parcialmente nublado",
-        3: "Nublado",
-        45: "Neblina",
-        48: "Neblina com geada",
-        51: "Chuvisco leve",
-        53: "Chuvisco moderado",
-        55: "Chuvisco intenso",
-        61: "Chuva leve",
-        63: "Chuva moderada",
-        65: "Chuva intensa",
-        71: "Neve leve",
-        73: "Neve moderada",
-        75: "Neve intensa",
-        80: "Pancadas de chuva leves",
-        81: "Pancadas de chuva moderadas",
-        82: "Pancadas de chuva fortes",
-        95: "Trovoada",
-        96: "Trovoada com granizo",
-        99: "Trovoada forte com granizo"
+st.markdown(
+    """
+    <style>
+    .main {
+        padding-top: 2rem;
     }
 
-    return descricoes.get(
-        codigo,
-        "Condição desconhecida"
-    )
+    .weather-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
 
+    .weather-subtitle {
+        font-size: 1.1rem;
+        color: #9ca3af;
+        margin-bottom: 2rem;
+    }
 
-def icone_tempo(codigo):
-    if codigo == 0:
-        return "☀️"
+    div[data-testid="stForm"] {
+        border: none;
+        padding: 0;
+    }
 
-    if codigo in [1, 2]:
-        return "🌤️"
+    div[data-testid="stFormSubmitButton"] button {
+        height: 42px;
+        margin-top: 28px;
+    }
 
-    if codigo == 3:
-        return "☁️"
+    .weather-card {
+        padding: 1.5rem;
+        border-radius: 14px;
+        border: 1px solid #30343b;
+        background: #171a20;
+        margin-bottom: 1rem;
+    }
 
-    if codigo in [45, 48]:
-        return "🌫️"
+    .temperature {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin: 0;
+    }
 
-    if codigo in [51, 53, 55]:
-        return "🌦️"
+    .weather-description {
+        font-size: 1.1rem;
+        color: #d1d5db;
+        margin-top: 0.5rem;
+    }
 
-    if codigo in [61, 63, 65, 80, 81, 82]:
-        return "🌧️"
+    .hour-card {
+        padding: 1rem 0.5rem;
+        text-align: center;
+        border-radius: 12px;
+        border: 1px solid #30343b;
+        background: #171a20;
+        min-height: 180px;
+    }
 
-    if codigo in [95, 96, 99]:
-        return "⛈️"
-
-    return "🌡️"
-
-
-
-# ESTADO DA APLICAÇÃO
-
-
-if "cep_consultado" not in st.session_state:
-    st.session_state.cep_consultado = ""
-
-
-
-# CABEÇALHO
-
-
-st.title("🌦️ Weather Explorer")
-
-st.write(
-    "Consulte informações meteorológicas "
-    "a partir de um CEP."
+    .day-card {
+        padding: 1rem;
+        text-align: center;
+        border-radius: 12px;
+        border: 1px solid #30343b;
+        background: #171a20;
+        min-height: 230px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
-st.divider()
+
+EMOJIS_TEMPO = {
+    "sol": "☀️",
+    "parcialmente_nublado": "🌤️",
+    "nublado": "☁️",
+    "neblina": "🌫️",
+    "chuvisco": "🌦️",
+    "chuva": "🌧️",
+    "trovoada": "⛈️",
+    "desconhecido": "🌡️"
+}
 
 
+if "dados_consulta" not in st.session_state:
+    st.session_state.dados_consulta = None
 
-# CAMPO DE CEP
 
-# CAMPO DE CEP
+if "previsao" not in st.session_state:
+    st.session_state.previsao = None
 
-with st.form("form_cep"):
 
-    col_input, col_button = st.columns([5, 1])
+st.markdown(
+    '<div class="weather-title">🌦️ Weather Explorer</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="weather-subtitle">'
+    'Consulte informações meteorológicas a partir de um CEP.'
+    '</div>',
+    unsafe_allow_html=True
+)
+
+
+with st.form("consulta_cep"):
+
+    col_input, col_button = st.columns(
+        [5, 1],
+        vertical_alignment="bottom"
+    )
 
     with col_input:
+
         cep = st.text_input(
             "Digite seu CEP",
-            placeholder="Ex.: 50000-000",
-            value=st.session_state.cep_consultado
+            placeholder="Ex.: 50000-000"
         )
 
     with col_button:
-        st.write("")
 
         consultar = st.form_submit_button(
             "Consultar",
@@ -125,33 +142,7 @@ with st.form("form_cep"):
         )
 
 
-# BOTÃO DE ATUALIZAR
-atualizar = st.button(
-    "🔄 Atualizar previsão",
-    use_container_width=True
-)
-
-# CONSULTA
-
-
-if consultar or atualizar:
-
-    
-    # SALVA O CEP CONSULTADO
-    
-
-    if consultar:
-
-        st.session_state.cep_consultado = cep
-
-    else:
-
-        cep = st.session_state.cep_consultado
-
-
-    
-    # VALIDAÇÃO DO CEP
-    
+if consultar:
 
     if not cep.strip():
 
@@ -161,21 +152,13 @@ if consultar or atualizar:
 
         st.stop()
 
-
-    
-    # BUSCA DO CEP
-    
-
     with st.spinner("Consultando CEP..."):
 
         try:
-
             dados = buscar_cep(cep)
 
         except Exception:
-
             dados = None
-
 
     if not dados:
 
@@ -185,11 +168,6 @@ if consultar or atualizar:
         )
 
         st.stop()
-
-
-    
-    # DADOS DO ENDEREÇO
-    
 
     cidade = dados.get(
         "localidade",
@@ -216,22 +194,12 @@ if consultar or atualizar:
         cep
     )
 
-
-    
-    # MONTA ENDEREÇO
-    
-
     endereco = (
         f"{logradouro}, "
         f"{bairro}, "
         f"{cidade}, "
         f"{estado}, Brasil"
     )
-
-
-    
-    # GEOCODIFICAÇÃO
-    
 
     with st.spinner("Localizando endereço..."):
 
@@ -247,7 +215,6 @@ if consultar or atualizar:
 
             coordenadas = None
 
-
     if not coordenadas:
 
         st.warning(
@@ -258,14 +225,13 @@ if consultar or atualizar:
 
         st.stop()
 
+    latitude = coordenadas.get(
+        "latitude"
+    )
 
-    latitude = coordenadas["latitude"]
-    longitude = coordenadas["longitude"]
-
-
-    
-    # PREVISÃO DO TEMPO
-    
+    longitude = coordenadas.get(
+        "longitude"
+    )
 
     with st.spinner(
         "Consultando previsão do tempo..."
@@ -282,7 +248,6 @@ if consultar or atualizar:
 
             previsao = None
 
-
     if not previsao:
 
         st.error(
@@ -292,10 +257,32 @@ if consultar or atualizar:
 
         st.stop()
 
+    st.session_state.dados_consulta = {
+        "cidade": cidade,
+        "estado": estado,
+        "logradouro": logradouro,
+        "bairro": bairro,
+        "cep": cep_formatado,
+        "latitude": latitude,
+        "longitude": longitude
+    }
 
-    
-    # DADOS ATUAIS
-    
+    st.session_state.previsao = previsao
+
+
+dados_consulta = st.session_state.dados_consulta
+previsao = st.session_state.previsao
+
+
+if dados_consulta and previsao:
+
+    cidade = dados_consulta["cidade"]
+    estado = dados_consulta["estado"]
+    logradouro = dados_consulta["logradouro"]
+    bairro = dados_consulta["bairro"]
+    cep_formatado = dados_consulta["cep"]
+    latitude = dados_consulta["latitude"]
+    longitude = dados_consulta["longitude"]
 
     atual = previsao.get(
         "current",
@@ -322,10 +309,10 @@ if consultar or atualizar:
         "weather_code"
     )
 
-
-    
-    # LOCALIZAÇÃO
-    
+    emoji_atual = EMOJIS_TEMPO.get(
+        icone_tempo(codigo),
+        "🌡️"
+    )
 
     st.divider()
 
@@ -333,44 +320,44 @@ if consultar or atualizar:
         f"📍 {cidade}, {estado}"
     )
 
-    st.caption(
-        f"CEP {cep_formatado} • "
-        f"{logradouro}, {bairro}"
+    st.caption(st.caption("🔒 Dados de localização processados temporariamente para consulta meteorológica.")
     )
 
-
-    
-    # CLIMA ATUAL
-    
-
-    col_weather, col_description = st.columns([1, 2])
+    col_weather, col_description = st.columns(
+        [1, 2]
+    )
 
     with col_weather:
 
-        st.metric(
-            label="Condição atual",
-            value=(
-                f"{icone_tempo(codigo)} "
-                f"{temperatura:.0f}°C"
-            )
+        st.markdown(
+            f"""
+            <div class="weather-card">
+                <p class="temperature">
+                    {emoji_atual}
+                    {temperatura:.0f}°C
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
+with col_description:
 
-    with col_description:
+    st.markdown(
+        f"""
+<div class="weather-card">
+    <p class="weather-description">
+        {descricao_tempo(codigo)}
+    </p>
 
-        st.metric(
-            label="Condição",
-            value=descricao_tempo(codigo),
-            delta=(
-                f"Sensação térmica: "
-                f"{sensacao:.0f}°C"
-            )
-        )
-
-
-    
-    # MÉTRICAS
-    
+    <p>
+        Sensação térmica de
+        <strong>{sensacao:.0f}°C</strong>
+    </p>
+</div>
+""",
+        unsafe_allow_html=True
+    )
 
     col1, col2, col3 = st.columns(3)
 
@@ -381,7 +368,6 @@ if consultar or atualizar:
             f"{umidade}%"
         )
 
-
     with col2:
 
         st.metric(
@@ -389,18 +375,12 @@ if consultar or atualizar:
             f"{vento:.0f} km/h"
         )
 
-
     with col3:
 
         st.metric(
             "🌡️ Sensação",
             f"{sensacao:.0f}°C"
         )
-
-
-    
-    # PREVISÃO POR HORA
-    
 
     st.divider()
 
@@ -433,7 +413,6 @@ if consultar or atualizar:
         []
     )[:24]
 
-
     quantidade_horas = min(
         len(horarios),
         len(temperaturas),
@@ -441,12 +420,7 @@ if consultar or atualizar:
         len(codigos_horarios)
     )
 
-
     if quantidade_horas > 0:
-
-
-        # CARDS
-
 
         st.markdown(
             "#### Previsão por horário"
@@ -461,51 +435,53 @@ if consultar or atualizar:
             quantidade_cards
         )
 
-
         for i in range(
             quantidade_cards
         ):
 
+            horario = pd.to_datetime(
+                horarios[i]
+            ).strftime("%H:%M")
+
+            temperatura_hora = temperaturas[i]
+            chuva_hora = chuvas[i]
+            codigo_hora = codigos_horarios[i]
+
+            emoji_hora = EMOJIS_TEMPO.get(
+                icone_tempo(codigo_hora),
+                "🌡️"
+            )
+
             with colunas[i]:
 
-                horario = pd.to_datetime(
-                    horarios[i]
-                ).strftime("%H:%M")
-
-                temperatura_hora = temperaturas[i]
-
-                chuva_hora = chuvas[i]
-
-                codigo_hora = codigos_horarios[i]
-
-
                 st.markdown(
-                    f"**{horario}**"
+                    f"""
+                    <div class="hour-card">
+
+                        <strong>
+                            {horario}
+                        </strong>
+
+                        <div style="font-size: 2rem; margin: 10px 0;">
+                            {emoji_hora}
+                        </div>
+
+                        <strong>
+                            {temperatura_hora:.0f}°C
+                        </strong>
+
+                        <div style="font-size: 0.8rem; margin-top: 8px;">
+                            {descricao_tempo(codigo_hora)}
+                        </div>
+
+                        <div style="font-size: 0.8rem; margin-top: 8px;">
+                            🌧️ {chuva_hora}%
+                        </div>
+
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
-
-                st.markdown(
-                    f"### "
-                    f"{icone_tempo(codigo_hora)}"
-                )
-
-                st.markdown(
-                    f"**{temperatura_hora:.0f}°C**"
-                )
-
-                st.caption(
-                    descricao_tempo(
-                        codigo_hora
-                    )
-                )
-
-                st.caption(
-                    f"🌧️ {chuva_hora}%"
-                )
-
-
-
-        # GRÁFICO
-
 
         st.markdown(
             "#### Variação da temperatura"
@@ -516,22 +492,18 @@ if consultar or atualizar:
                 "Horário": pd.to_datetime(
                     horarios
                 ),
-
                 "Temperatura (°C)": temperaturas
             }
         )
-
 
         grafico = grafico.set_index(
             "Horário"
         )
 
-
         st.line_chart(
             grafico,
             y="Temperatura (°C)"
         )
-
 
     else:
 
@@ -539,11 +511,6 @@ if consultar or atualizar:
             "Não foi possível carregar "
             "a previsão por hora."
         )
-
-
-    
-    # PREVISÃO PARA 7 DIAS
-    
 
     st.divider()
 
@@ -581,7 +548,6 @@ if consultar or atualizar:
         []
     )
 
-
     quantidade_dias = min(
         len(datas),
         len(maximas),
@@ -590,59 +556,60 @@ if consultar or atualizar:
         len(chuvas_diarias)
     )
 
-
     if quantidade_dias > 0:
 
         colunas = st.columns(
             quantidade_dias
         )
 
-
         for i in range(
             quantidade_dias
         ):
 
+            data_formatada = pd.to_datetime(
+                datas[i]
+            ).strftime("%d/%m")
+
+            emoji_dia = EMOJIS_TEMPO.get(
+                icone_tempo(codigos_diarios[i]),
+                "🌡️"
+            )
+
             with colunas[i]:
 
-                data_formatada = pd.to_datetime(
-                    datas[i]
-                ).strftime("%d/%m")
-
-
                 st.markdown(
-                    f"**{data_formatada}**"
+                    f"""
+                    <div class="day-card">
+
+                        <strong>
+                            {data_formatada}
+                        </strong>
+
+                        <div style="font-size: 2rem; margin: 12px 0;">
+                            {emoji_dia}
+                        </div>
+
+                        <strong>
+                            {maximas[i]:.0f}°C
+                        </strong>
+
+                        <div>
+                            Mínima:
+                            {minimas[i]:.0f}°C
+                        </div>
+
+                        <div style="font-size: 0.8rem; margin-top: 8px;">
+                            {descricao_tempo(codigos_diarios[i])}
+                        </div>
+
+                        <div style="font-size: 0.8rem; margin-top: 8px;">
+                            🌧️ {chuvas_diarias[i]}%
+                        </div>
+
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
-
-
-                st.markdown(
-                    f"### "
-                    f"{icone_tempo(codigos_diarios[i])}"
-                )
-
-
-                st.write(
-                    f"**{maximas[i]:.0f}°C**"
-                )
-
-
-                st.caption(
-                    f"Mínima: "
-                    f"{minimas[i]:.0f}°C"
-                )
-
-
-                st.caption(
-                    descricao_tempo(
-                        codigos_diarios[i]
-                    )
-                )
-
-
-                st.caption(
-                    f"🌧️ Chuva: "
-                    f"{chuvas_diarias[i]}%"
-                )
-
 
     else:
 
@@ -651,17 +618,11 @@ if consultar or atualizar:
             "a previsão dos próximos dias."
         )
 
-
-    
-    # MAPA
-    
-
     st.divider()
 
     st.subheader(
         "🗺️ Localização"
     )
-
 
     mapa = pd.DataFrame(
         {
@@ -670,7 +631,6 @@ if consultar or atualizar:
         }
     )
 
-
     st.map(
         mapa,
         latitude="latitude",
@@ -678,13 +638,33 @@ if consultar or atualizar:
         zoom=12
     )
 
-
-    
-    # COORDENADAS
-    
-
-    st.caption(
-        f"Coordenadas: "
-        f"{latitude:.5f}, "
-        f"{longitude:.5f}"
+    st.caption(st.caption("🔒 Dados de localização processados temporariamente para consulta meteorológica.")
     )
+
+    st.divider()
+
+    if st.button(
+        "🔄 Atualizar previsão"
+    ):
+
+        with st.spinner(
+            "Atualizando previsão..."
+        ):
+
+            try:
+
+                nova_previsao = buscar_previsao(
+                    latitude,
+                    longitude
+                )
+
+                st.session_state.previsao = nova_previsao
+
+                st.rerun()
+
+            except Exception:
+
+                st.error(
+                    "Não foi possível atualizar "
+                    "a previsão neste momento."
+                )

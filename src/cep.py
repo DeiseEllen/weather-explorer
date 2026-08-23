@@ -10,7 +10,11 @@ def buscar_cep(cep):
     url = f"https://viacep.com.br/ws/{cep}/json/"
 
     try:
-        resposta = requests.get(url, timeout=10)
+        resposta = requests.get(
+            url,
+            timeout=10
+        )
+
         resposta.raise_for_status()
 
         dados = resposta.json()

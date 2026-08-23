@@ -102,34 +102,34 @@ st.divider()
 
 # CAMPO DE CEP
 
+# CAMPO DE CEP
 
-col_input, col_button = st.columns([5, 1])
+with st.form("form_cep"):
 
-with col_input:
+    col_input, col_button = st.columns([5, 1])
 
-    cep = st.text_input(
-        "Digite seu CEP",
-        placeholder="Ex.: 50000-000",
-        value=st.session_state.cep_consultado
-    )
+    with col_input:
+        cep = st.text_input(
+            "Digite seu CEP",
+            placeholder="Ex.: 50000-000",
+            value=st.session_state.cep_consultado
+        )
 
+    with col_button:
+        st.write("")
 
-with col_button:
-
-    st.write("")
-
-    consultar = st.button(
-        "Consultar",
-        type="primary",
-        use_container_width=True
-    )
-
-    atualizar = st.button(
-        "🔄 Atualizar previsão",
-        use_container_width=True
-    )
+        consultar = st.form_submit_button(
+            "Consultar",
+            type="primary",
+            use_container_width=True
+        )
 
 
+# BOTÃO DE ATUALIZAR
+atualizar = st.button(
+    "🔄 Atualizar previsão",
+    use_container_width=True
+)
 
 # CONSULTA
 

@@ -1,15 +1,10 @@
 # 🌦️ Weather Explorer
 
-# 🌦️ Weather Explorer
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://weather-explorer-st.streamlit.app/)
 
-[![Streamlit App] (https://weather-explorer-st.streamlit.app/)
-
-> 🔗 **[Clique aqui para testar a aplicação online sem instalar nada!](https://SEU-APP.streamlit.app)**
-
----
+> 🔗 **[Clique aqui para testar a aplicação online sem instalar nada!](https://weather-explorer-st.streamlit.app/)**
 
 Uma aplicação web interativa e de alta performance desenvolvida em Python e Streamlit para consulta de dados meteorológicos em tempo real a partir do CEP.
-
 ---
 
 ## Funcionalidades
